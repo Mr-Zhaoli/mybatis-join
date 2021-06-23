@@ -105,7 +105,7 @@ public class Test {
                 .select(json(
                         col("是否参加了比赛2"),
                         If(exists(q -> q.query(Score.class)
-                                .eq(Score::getExamId, "3")
+                                .eq(Score::getExamId, "2")
                                 .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false),
                         col("是否参加了比赛3"),
                         If(exists(q -> q.query(Score.class)
@@ -122,7 +122,7 @@ public class Test {
 ```
 ```log
 2021-06-23 18:42:58.931 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==>  Preparing: SELECT JSON_OBJECT('是否参加了比赛2',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false),'是否参加了比赛3',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false)) as name FROM t_user WHERE (t_user.`name` = ?) 
-2021-06-23 18:42:58.948 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 3(String), 3(String), 赵小莉(String)
+2021-06-23 18:42:58.948 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 2(String), 3(String), 赵小莉(String)
 2021-06-23 18:42:58.964 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : <==      Total: 1
 {"是否参加了比赛2": 1, "是否参加了比赛3": 1}
 ```
