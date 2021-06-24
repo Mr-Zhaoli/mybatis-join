@@ -7,14 +7,12 @@ import lombok.Data;
 public class IfNullColumn implements Column {
 
     private Column column;
-    private Column trueValue;
-    private Column falseValue;
+    private Column otherValue;
     private String asName;
 
-    public IfNullColumn(Column column, Column trueValue, Column falseValue) {
+    public IfNullColumn(Column column, Column otherValue) {
         this.column = column;
-        this.trueValue = trueValue;
-        this.falseValue = falseValue;
+        this.otherValue = otherValue;
     }
 
     @Override
@@ -22,9 +20,7 @@ public class IfNullColumn implements Column {
         String s = "IFNULL("
                 + column.selectColumn()
                 + ","
-                + trueValue.selectColumn()
-                + ","
-                + falseValue.selectColumn()
+                + otherValue.selectColumn()
                 + ")";
         if (asName == null || "".equals(asName)) {
             return s;
@@ -35,7 +31,6 @@ public class IfNullColumn implements Column {
     @Override
     public void fillData(ColumnData columnData) {
         column.fillData(columnData);
-        trueValue.fillData(columnData);
-        falseValue.fillData(columnData);
+        otherValue.fillData(columnData);
     }
 }

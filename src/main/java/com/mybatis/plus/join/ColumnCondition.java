@@ -4,7 +4,7 @@ import com.mybatis.plus.join.column.Column;
 import lombok.Data;
 
 /**
- * TODO
+ * 列=列的判断条件
  *
  * @author by zhaojin
  * @since 2021/6/18 9:49

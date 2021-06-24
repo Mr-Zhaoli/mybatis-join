@@ -15,6 +15,7 @@ import com.baomidou.mybatisplus.core.toolkit.ArrayUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mybatis.plus.join.column.Column;
 import com.mybatis.plus.join.column.ConstColumn;
 import com.mybatis.plus.join.column.TableColumn;
@@ -32,8 +33,7 @@ import static com.baomidou.mybatisplus.core.enums.SqlKeyword.*;
 import static com.baomidou.mybatisplus.core.enums.WrapperKeyword.*;
 import static java.util.stream.Collectors.joining;
 
-public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
-        implements CommonFunction<T> {
+public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
 
     private final List<Join<?, ?>> joinList = new ArrayList<>();
     private final Map<String, List<Column>> selectList = new HashMap<>();
@@ -77,12 +77,13 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         return entityClass;
     }
 
-    public String getTableName() {
-        return tableName;
+    public void setBaseMapper(ParentMapper<T> baseMapper) {
+        this.baseMapper = baseMapper;
     }
 
+    // ******************以下方法用于执行sql**********************
     public T first() {
-        List<T> list = list();
+        List<T> list = page(new Page<>(1, 1)).getRecords();
         return list.isEmpty() ? null : list.get(0);
     }
 
@@ -112,13 +113,7 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         return baseMapper.selectPageJoin(page, this);
     }
 
-    public void setBaseMapper(ParentMapper<T> baseMapper) {
-        this.baseMapper = baseMapper;
-    }
-
-    public Map<String, List<Column>> getSelectList() {
-        return selectList;
-    }
+    // ******************以上方法用于执行sql**********************
 
     @Override
     public String getSqlSelect() {
@@ -128,6 +123,85 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         return selectList.values().stream().flatMap(Collection::stream)
                 .map(Column::selectColumn)
                 .collect(Collectors.joining(","));
+    }
+
+    protected ISqlSegment inExpression(Collection<?> value) {
+        return () -> value.stream().map(i -> formatSql("{0}", i))
+                .collect(joining(StringPool.COMMA, StringPool.LEFT_BRACKET, StringPool.RIGHT_BRACKET));
+    }
+
+    private void addConditionWithTable(boolean condition, SFunction<?, ?> column, SqlKeyword sqlKeyword, Object val) {
+        doIt(condition, () -> SFuncUtils.getColumnNameWithTable(column), sqlKeyword, () -> formatSql("{0}", val));
+    }
+
+    @Override
+    protected JoinWrapper<T> instance() {
+        JoinWrapper<T> wrapper = new JoinWrapper<>(entity, entityClass, paramNameSeq, paramNameValuePairs, new MergeSegments(),
+                SharedString.emptyString(), SharedString.emptyString());
+        wrapper.setBaseMapper(baseMapper);
+        return wrapper;
+    }
+
+    @Override
+    public String columnToString(SFunction<T, ?> column) {
+        return SFuncUtils.getColumnNameWithTable(column);
+    }
+
+    public final String fmtSql(Object param) {
+        return formatSqlIfNeed(true, "{0}", param);
+    }
+
+
+    // ************************以下方法用于判断是否含有join操作,以及拼接join的相关sql*************************
+    public List<Join<?, ?>> getJoinList() {
+        return joinList;
+    }
+
+    public String getJoins() {
+        if (CollectionUtils.isEmpty(joinList)) {
+            return " ";
+        }
+        StringBuilder s = new StringBuilder(" ");
+        for (Join<?, ?> join : joinList) {
+            s.append(" ").append(join.getSql());
+        }
+        return s.toString();
+    }
+    // *************************以上方法用于判断是否含有join操作,以及拼接join的相关sql**************************
+
+
+    // ***************************以下是补充的拼接sql方法**************************************
+
+    public JoinWrapper<T> where(Column col1, ConditionEnum conditionEnum, SFunction<T, ?> col2) {
+        return where(true, col1, conditionEnum, new TableColumn<>(col2));
+    }
+
+    public JoinWrapper<T> where(Column col1, ConditionEnum conditionEnum, Object col2) {
+        return where(true, col1, conditionEnum, new ConstColumn(col2));
+    }
+
+    public JoinWrapper<T> where(SFunction<T, ?> col1, ConditionEnum conditionEnum, Column col2) {
+        return where(true, new TableColumn<>(col1), conditionEnum, col2);
+    }
+
+    public JoinWrapper<T> where(Column col1, ConditionEnum conditionEnum, Column col2) {
+        return where(true, col1, conditionEnum, col2);
+    }
+
+    public JoinWrapper<T> where(boolean condition, Column col1, ConditionEnum conditionEnum, Column col2) {
+        ColumnData join = new ColumnData(this);
+        col1.fillData(join);
+        col2.fillData(join);
+        return doIt(condition, col1::selectColumn, conditionEnum::getSqlSegment, col2::selectColumn);
+    }
+
+    public <K> JoinWrapper<T> exists(Consumer<ExistWrapper<T, K>> consumer) {
+        final ExistWrapper<T, K> instance = new ExistWrapper<>(entity, entityClass, paramNameSeq,
+                paramNameValuePairs, new MergeSegments(),
+                SharedString.emptyString(), SharedString.emptyString());
+        consumer.accept(instance);
+        doIt(true, LEFT_BRACKET, instance, RIGHT_BRACKET);
+        return this;
     }
 
     public JoinWrapper<T> select(Column column, String asName) {
@@ -148,6 +222,11 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         return select(tableColumn, asName);
     }
 
+    @SuppressWarnings("unchecked")
+    public final JoinWrapper<T> select(SFunction<T, ?> column) {
+        return select(new SFunction[]{column});
+    }
+
     @SafeVarargs
     public final JoinWrapper<T> select(SFunction<T, ?>... columns) {
         List<Column> newList = Arrays.stream(columns)
@@ -161,63 +240,6 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         selectList.put(tableName, oldList);
         return this;
     }
-
-    @Override
-    protected JoinWrapper<T> instance() {
-        JoinWrapper<T> wrapper = new JoinWrapper<>(entity, entityClass, paramNameSeq, paramNameValuePairs, new MergeSegments(),
-                SharedString.emptyString(), SharedString.emptyString());
-        wrapper.setBaseMapper(baseMapper);
-        return wrapper;
-    }
-
-    @Override
-    public String columnToString(SFunction<T, ?> column) {
-        return SFuncUtils.getColumnNameWithTable(column);
-    }
-
-    @Override
-    public String columnToStringWithoutTableName(SFunction<T, ?> column) {
-        return this.columnToString(column, true);
-    }
-
-    public List<Join<?, ?>> getJoinList() {
-        return joinList;
-    }
-
-    public String getJoins() {
-        if (CollectionUtils.isEmpty(joinList)) {
-            return " ";
-        }
-        StringBuilder s = new StringBuilder(" ");
-        for (Join<?, ?> join : joinList) {
-            s.append(" ").append(join.getSql());
-        }
-        return s.toString();
-    }
-
-
-    protected ISqlSegment inExpression(Collection<?> value) {
-        return () -> value.stream().map(i -> formatSql("{0}", i))
-                .collect(joining(StringPool.COMMA, StringPool.LEFT_BRACKET, StringPool.RIGHT_BRACKET));
-    }
-
-    //*****************************************************************
-
-
-    public <K> JoinWrapper<T> exists(Consumer<ExistWrapper<T, K>> consumer) {
-        final ExistWrapper<T, K> instance = new ExistWrapper<>(entity, entityClass, paramNameSeq,
-                paramNameValuePairs, new MergeSegments(),
-                SharedString.emptyString(), SharedString.emptyString());
-        consumer.accept(instance);
-        doIt(true, LEFT_BRACKET, instance, RIGHT_BRACKET);
-        return this;
-    }
-
-    private void addConditionWithTable(boolean condition, SFunction<?, ?> column, SqlKeyword sqlKeyword, Object val) {
-        doIt(condition, () -> SFuncUtils.getColumnNameWithTable(column), sqlKeyword, () -> formatSql("{0}", val));
-    }
-    //*****************************************************************
-
 
     public <K> Join<T, K> innerJoin(Class<K> targetTable) {
         Join<T, K> innerJoin = this.new Join<>("INNER", targetTable, joinList.size());
@@ -236,6 +258,8 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
         joinList.add(innerJoin);
         return innerJoin;
     }
+
+    // ****************************以上是补充的拼接sql方法*************************************
 
 
     @SuppressWarnings("unchecked")
@@ -301,6 +325,31 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
 
         public <K> Join<T, K> rightJoin(Class<K> targetTable) {
             return JoinWrapper.this.rightJoin(targetTable);
+        }
+
+
+        public Join<SourceTable, TargetTable> where(Column col1, ConditionEnum conditionEnum, SFunction<TargetTable, ?> col2) {
+            return where(true, col1, conditionEnum, new TableColumn<>(col2));
+        }
+
+        public Join<SourceTable, TargetTable> where(Column col1, ConditionEnum conditionEnum, Object col2) {
+            return where(true, col1, conditionEnum, new ConstColumn(col2));
+        }
+
+        public Join<SourceTable, TargetTable> where(SFunction<TargetTable, ?> col1, ConditionEnum conditionEnum, Column col2) {
+            return where(true, new TableColumn<>(col1), conditionEnum, col2);
+        }
+
+        public Join<SourceTable, TargetTable> where(Column col1, ConditionEnum conditionEnum, Column col2) {
+            return where(true, col1, conditionEnum, col2);
+        }
+
+        public Join<SourceTable, TargetTable> where(boolean condition, Column col1, ConditionEnum conditionEnum, Column col2) {
+            ColumnData join = new ColumnData(JoinWrapper.this);
+            col1.fillData(join);
+            col2.fillData(join);
+            doIt(condition, col1::selectColumn, conditionEnum::getSqlSegment, col2::selectColumn);
+            return this;
         }
 
         @Override
@@ -559,6 +608,10 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>>
             return select(tableColumn, asName);
         }
 
+
+        public final Join<SourceTable, TargetTable> select(SFunction<TargetTable, ?> column) {
+            return select(new SFunction[]{column});
+        }
 
         @SafeVarargs
         public final Join<SourceTable, TargetTable> select(SFunction<TargetTable, ?>... columns) {

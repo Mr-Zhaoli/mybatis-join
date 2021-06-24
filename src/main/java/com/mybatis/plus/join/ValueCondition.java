@@ -6,7 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * TODO
+ * 列=值的判断条件
  *
  * @author by zhaojin
  * @since 2021/6/18 9:49
@@ -15,14 +15,14 @@ import java.io.Serializable;
 public class ValueCondition implements Condition {
     private ConditionEnum sqlKeyword;
     private Column column;
-    private Serializable value;
+    private Object value;
     private int index;
     private int joinIndex;
 
     public ValueCondition() {
     }
 
-    public ValueCondition(ConditionEnum sqlKeyword, Column column, Serializable value, int index, int joinIndex) {
+    public ValueCondition(ConditionEnum sqlKeyword, Column column, Object value, int index, int joinIndex) {
         this.sqlKeyword = sqlKeyword;
         this.column = column;
         this.value = value;

@@ -41,7 +41,9 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+
 import static com.mybatis.plus.service.impl.BaseService.*;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class Test {
@@ -55,7 +57,7 @@ public class Test {
                 .innerJoin(Score.class)
                 .on(User::getId, Score::getUserId, ConditionEnum.EQ)
                 .eq(Score::getExamId, "1")
-                .select(max(Score::getScore), "id")
+                .select(MAX(Score::getScore), "id")
                 .groupBy(Score::getExamId)
                 .one();
         System.out.println(user);
@@ -86,8 +88,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Objects;
-
 import static com.mybatis.plus.service.impl.BaseService.*;
 
 @RunWith(SpringRunner.class)
@@ -96,19 +96,20 @@ public class Test {
 
     @Autowired
     private IUserService userService;
+
     /**
      * 查询一下名字为赵小莉的有没有参加比赛2和比赛3
      */
     @org.junit.Test
     public void testZXLExistScore() {
         User user = userService.query(User.class)
-                .select(json(
-                        col("是否参加了比赛2"),
-                        If(exists(q -> q.query(Score.class)
-                                .eq(Score::getExamId, "3")
+                .select(JSON(
+                        COL("是否参加了比赛2"),
+                        IF(exists(q -> q.query(Score.class)
+                                .eq(Score::getExamId, "2")
                                 .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false),
-                        col("是否参加了比赛3"),
-                        If(exists(q -> q.query(Score.class)
+                        COL("是否参加了比赛3"),
+                        IF(exists(q -> q.query(Score.class)
                                 .eq(Score::getExamId, "3")
                                 .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false))
                         , "name")

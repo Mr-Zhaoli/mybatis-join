@@ -13,7 +13,7 @@ import org.apache.ibatis.reflection.property.PropertyNamer;
 import java.util.Map;
 
 /**
- * TODO
+ * 用SFunction获取表名+"."+列名
  *
  * @author by zhaojin
  * @since 2021/6/23 11:21

@@ -16,7 +16,7 @@ public class UserService extends BaseService<UserMapper, User> implements IUserS
                 .innerJoin(Score.class)
                 .on(User::getId, Score::getUserId, ConditionEnum.EQ)
                 .eq(Score::getExamId, 1)
-                .select(max(Score::getScore), "name")
+                .select(MAX(Score::getScore), "name")
                 .select(Score::getUserId)
                 .one();
         System.out.println(score);

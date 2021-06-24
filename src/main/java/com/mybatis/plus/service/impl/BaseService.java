@@ -13,69 +13,76 @@ import java.util.function.Consumer;
 
 public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T> implements IBaseService<T> {
 
-    public static <T, K> ExistColumn exists(Consumer<ExistWrapper<T, K>> consumer) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <T, K> ExistColumn EXISTS(Consumer<ExistWrapper<T, K>> consumer) {
         ExistColumn existColumn = new ExistColumn();
         existColumn.setConsumer((Consumer) consumer);
         return existColumn;
     }
 
-    public static <T> JSONColumn json(Column... column) {
+    public static <T> JSONColumn JSON(Column... column) {
         return new JSONColumn(column);
     }
 
-    public static <T> Column col(Serializable column) {
+    /**
+     * 转化为常量列
+     */
+    public static <T> Column COL(Serializable column) {
         return new ConstColumn(column);
     }
 
-    public static <T> Column col(SFunction<T, ?> column) {
+    /**
+     * 转化为表的列
+     */
+    public static <T> Column COL(SFunction<T, ?> column) {
         return new TableColumn<>(column);
     }
 
-    public static <T> SumColumn sum(SFunction<T, ?> column) {
+    public static <T> SumColumn SUM(SFunction<T, ?> column) {
         return new SumColumn(new TableColumn<>(column));
     }
 
-    public static <T> MinColumn min(SFunction<T, ?> column) {
+    public static <T> MinColumn MIN(SFunction<T, ?> column) {
         return new MinColumn(new TableColumn<>(column));
     }
 
-    public static <T> MaxColumn max(SFunction<T, ?> column) {
+    public static <T> MaxColumn MAX(SFunction<T, ?> column) {
         return new MaxColumn(new TableColumn<>(column));
     }
 
-    public static <T> IfColumn If(Column column1, Serializable trueValue, Serializable falseValue) {
+    public static <T> IfColumn IF(Column column1, Serializable trueValue, Serializable falseValue) {
         return new IfColumn(column1, null, null, new ConstColumn(trueValue), new ConstColumn(falseValue));
     }
 
-    public static <T> IfColumn If(SFunction<T, ?> column1, ConditionEnum condition, Serializable column2, SFunction<T, ?> trueValue, SFunction<T, ?> falseValue) {
+    public static <T> IfColumn IF(SFunction<T, ?> column1, ConditionEnum condition, Serializable column2, SFunction<T, ?> trueValue, SFunction<T, ?> falseValue) {
         return new IfColumn(new TableColumn<>(column1), condition, new ConstColumn(column2), new TableColumn<>(trueValue), new TableColumn<>(falseValue));
     }
 
-    public static <T> IfColumn If(SFunction<T, ?> column1, ConditionEnum condition, Serializable column2, Serializable trueValue, Serializable falseValue) {
+    public static <T> IfColumn IF(SFunction<T, ?> column1, ConditionEnum condition, Serializable column2, Serializable trueValue, Serializable falseValue) {
         return new IfColumn(new TableColumn<>(column1), condition, new ConstColumn(column2), new ConstColumn(trueValue), new ConstColumn(falseValue));
     }
 
-    public static <T> IfNullColumn ifNull(SFunction<T, ?> column1, Column trueValue, Column falseValue) {
-        return new IfNullColumn(new TableColumn<>(column1), trueValue, falseValue);
+    public static <T> IfNullColumn IFNULL(SFunction<T, ?> column1, Column otherValue) {
+        return new IfNullColumn(new TableColumn<>(column1), otherValue);
     }
 
-    public static <T> IfNullColumn ifNull(SFunction<T, ?> column1, Serializable trueValue, Serializable falseValue) {
-        return new IfNullColumn(new TableColumn<>(column1), new ConstColumn(trueValue), new ConstColumn(falseValue));
+    public static <T> IfNullColumn IFNULL(SFunction<T, ?> column1, Serializable otherValue) {
+        return new IfNullColumn(new TableColumn<>(column1), new ConstColumn(otherValue));
     }
 
-    public static <T> MonthColumn month(SFunction<T, ?> column) {
+    public static <T> MonthColumn MONTH(SFunction<T, ?> column) {
         return new MonthColumn(new TableColumn<>(column));
     }
 
-    public static <T> MonthColumn month(String dateFormat) {
+    public static <T> MonthColumn MONTH(String dateFormat) {
         return new MonthColumn(new ConstColumn(dateFormat));
     }
 
-    public static <T> YearColumn year(SFunction<T, ?> column) {
+    public static <T> YearColumn YEAR(SFunction<T, ?> column) {
         return new YearColumn(new TableColumn<>(column));
     }
 
-    public static <T> YearColumn year(String dateFormat) {
+    public static <T> YearColumn YEAR(String dateFormat) {
         return new YearColumn(new ConstColumn(dateFormat));
     }
 }
