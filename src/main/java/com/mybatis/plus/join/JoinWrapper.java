@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mybatis.plus.join.column.Column;
 import com.mybatis.plus.join.column.ConstColumn;
+import com.mybatis.plus.join.column.SubQueryColumn;
 import com.mybatis.plus.join.column.TableColumn;
 import com.mybatis.plus.mapper.ParentMapper;
 import org.springframework.util.CollectionUtils;
@@ -35,10 +36,10 @@ import static java.util.stream.Collectors.joining;
 
 public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
 
-    private final List<Join<?, ?>> joinList = new ArrayList<>();
-    private final Map<String, List<Column>> selectList = new HashMap<>();
-    private final String tableName;
-    private ParentMapper<T> baseMapper;
+    protected final List<Join<?, ?>> joinList = new ArrayList<>();
+    protected final Map<String, List<Column>> selectList = new HashMap<>();
+    protected String tableName;
+    protected ParentMapper<T> baseMapper;
 
     JoinWrapper(T entity, Class<T> cl, AtomicInteger paramNameSeq,
                 Map<String, Object> paramNameValuePairs, MergeSegments mergeSegments,
@@ -172,6 +173,27 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
 
     // ***************************以下是补充的拼接sql方法**************************************
 
+
+    public JoinWrapper<T> notIN(boolean condition, SFunction<T, ?> col, SubQueryColumn column) {
+        return not(condition).in(true, col, column);
+    }
+
+    public JoinWrapper<T> notIN(SFunction<T, ?> col, SubQueryColumn column) {
+        return notIN(true, col, column);
+    }
+
+    public JoinWrapper<T> in(boolean condition, SFunction<T, ?> col, SubQueryColumn column) {
+        TableColumn<T> tableColumn = new TableColumn<>(col);
+        ColumnData join = new ColumnData(this);
+        column.fillData(join);
+        tableColumn.fillData(join);
+        return doIt(condition, tableColumn::selectColumn, IN, column::selectColumn);
+    }
+
+    public JoinWrapper<T> in(SFunction<T, ?> col, SubQueryColumn column) {
+        return in(true, col, column);
+    }
+
     public JoinWrapper<T> where(Column col1, ConditionEnum conditionEnum, SFunction<T, ?> col2) {
         return where(true, col1, conditionEnum, new TableColumn<>(col2));
     }
@@ -182,6 +204,10 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
 
     public JoinWrapper<T> where(SFunction<T, ?> col1, ConditionEnum conditionEnum, Column col2) {
         return where(true, new TableColumn<>(col1), conditionEnum, col2);
+    }
+
+    public <K> JoinWrapper<T> where(SFunction<T, ?> col1, ConditionEnum conditionEnum, SFunction<K, ?> col2) {
+        return where(true, new TableColumn<>(col1), conditionEnum, new TableColumn<>(col2));
     }
 
     public JoinWrapper<T> where(Column col1, ConditionEnum conditionEnum, Column col2) {
@@ -195,12 +221,12 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
         return doIt(condition, col1::selectColumn, conditionEnum::getSqlSegment, col2::selectColumn);
     }
 
-    public <K> JoinWrapper<T> exists(Consumer<ExistWrapper<T, K>> consumer) {
-        final ExistWrapper<T, K> instance = new ExistWrapper<>(entity, entityClass, paramNameSeq,
+    public <K> JoinWrapper<T> exists(Consumer<SubQueryWrapper<T>> consumer) {
+        final SubQueryWrapper<T> instance = new SubQueryWrapper<>(entity, entityClass, paramNameSeq,
                 paramNameValuePairs, new MergeSegments(),
                 SharedString.emptyString(), SharedString.emptyString());
         consumer.accept(instance);
-        doIt(true, LEFT_BRACKET, instance, RIGHT_BRACKET);
+        doIt(true, EXISTS, LEFT_BRACKET, instance, RIGHT_BRACKET);
         return this;
     }
 

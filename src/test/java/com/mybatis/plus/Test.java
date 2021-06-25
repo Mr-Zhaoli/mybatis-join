@@ -15,6 +15,9 @@ import java.util.List;
 
 import static com.mybatis.plus.service.impl.BaseService.*;
 
+/**
+ * 运行前需要 set @@global_mode=''
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class Test {
@@ -22,6 +25,53 @@ public class Test {
     @Autowired
     private IUserService userService;
 
+    /**
+     * 测试子查询,获取子查询的结果,不能将子查询当成临时表来查询.
+     */
+    @org.junit.Test
+    public void testSubQuery() {
+        List<User> userList = userService.query(User.class)
+                .select(QUERY(q -> q.query(Score.class)
+                                .select(Score::getId)
+                                .where(Score::getId, ConditionEnum.EQ, User::getId)
+                                .eq(Score::getId, "1")),
+                        "id")
+                .list();
+        System.out.println(userList);
+
+        userList = userService.query(User.class)
+                .notIN(User::getId, QUERY(q -> q.query(User.class)
+                        .select(User::getId)))
+                .list();
+        System.out.println(userList);
+    }
+
+
+    @org.junit.Test
+    public void testCaseWhenColumn() {
+        List<User> userList = userService.query(User.class)
+                .select(CASE(
+                        User::getId,
+                        COL(1000),
+                        WHEN(ConditionEnum.EQ, "1", 100),
+                        WHEN(ConditionEnum.EQ, "1", "200"),
+                        WHEN(ConditionEnum.EQ, "1", 300),
+                        WHEN(ConditionEnum.EQ, "1", "400")
+                ), "id")
+                .list();
+        System.out.println(userList);
+
+
+        userList = userService.query(User.class)
+                .select(CASE(null,
+                        WHEN(User::getId, ConditionEnum.EQ, "1", 100),
+                        WHEN(User::getId, ConditionEnum.EQ, "1", "200"),
+                        WHEN(User::getId, ConditionEnum.EQ, "1", 300),
+                        WHEN(User::getId, ConditionEnum.EQ, "1", "400")
+                ), "id")
+                .list();
+        System.out.println(userList);
+    }
 
     @org.junit.Test
     public void testConstColumn() {
@@ -64,21 +114,22 @@ public class Test {
 
 
     /**
-     * 查询一下名字为赵小莉的有没有参加比赛2和比赛3
+     * 查询一下名字为老李的有没有参加比赛2和比赛3
      */
     @org.junit.Test
-    public void testZXLExistScore() {
+    public void testLAOLIExistScore() {
         User user = userService.query(User.class)
                 .select(JSON(
                         COL("是否参加了比赛2"),
-                        IF(EXISTS(q -> q.query(Score.class).eq(Score::getExamId, "3")
-                                .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false),
+                        IF(EXISTS(q -> q.query(Score.class)
+                                .eq(Score::getExamId, "3")
+                                .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false),
                         COL("是否参加了比赛3"),
                         IF(EXISTS(q -> q.query(Score.class).eq(Score::getExamId, "3")
-                                .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false)
+                                .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false)
                         )
                         , "name")
-                .eq(User::getName, "赵小莉")
+                .eq(User::getName, "老李")
                 .one();
         System.out.println(user.getName());
     }
@@ -90,7 +141,7 @@ public class Test {
     public void testExistScoreInExam2() {
         List<User> users = userService.query(User.class)
                 .exists(q -> q.query(Score.class).eq(Score::getExamId, "2")
-                        .on(Score::getUserId, User::getId, ConditionEnum.EQ)
+                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)
                 )
                 .list();
         System.out.println(users);

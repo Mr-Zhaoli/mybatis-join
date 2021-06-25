@@ -1,12 +1,8 @@
 package com.mybatis.plus.join.column;
 
-import com.baomidou.mybatisplus.core.conditions.SharedString;
-import com.baomidou.mybatisplus.core.conditions.segments.MergeSegments;
+import com.baomidou.mybatisplus.core.enums.SqlKeyword;
 import com.mybatis.plus.join.ColumnData;
-import com.mybatis.plus.join.ExistWrapper;
 import lombok.Data;
-
-import java.util.function.Consumer;
 
 /**
  * TODO
@@ -16,13 +12,16 @@ import java.util.function.Consumer;
  */
 @Data
 public class ExistColumn implements Column {
-    private Consumer<ExistWrapper> consumer;
-    private ExistWrapper wrapper;
+    private SubQueryColumn subQuery;
     private String asName;
+
+    public ExistColumn(SubQueryColumn subQuery) {
+        this.subQuery = subQuery;
+    }
 
     @Override
     public String selectColumn() {
-        String s = wrapper.getSqlSegment();
+        String s = SqlKeyword.EXISTS.getSqlSegment() + subQuery.selectColumn();
         if (asName == null || "".equals(asName)) {
             return s;
         }
@@ -31,14 +30,6 @@ public class ExistColumn implements Column {
 
     @Override
     public void fillData(ColumnData join) {
-        wrapper = new ExistWrapper<>(
-                null,
-                join.getWrapper().getEntityClass(),
-                join.getWrapper().getParamNameSeq(),
-                join.getWrapper().getParamNameValuePairs(),
-                new MergeSegments(),
-                SharedString.emptyString(),
-                SharedString.emptyString());
-        consumer.accept(wrapper);
+        subQuery.fillData(join);
     }
 }

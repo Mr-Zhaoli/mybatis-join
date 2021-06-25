@@ -3,21 +3,60 @@ package com.mybatis.plus.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mybatis.plus.join.ConditionEnum;
-import com.mybatis.plus.join.ExistWrapper;
+import com.mybatis.plus.join.SubQueryWrapper;
 import com.mybatis.plus.join.column.*;
 import com.mybatis.plus.mapper.ParentMapper;
 import com.mybatis.plus.service.IBaseService;
+import org.springframework.util.Assert;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T> implements IBaseService<T> {
 
+
+    public static <T> CaseWhenColumn.Condition WHEN(SFunction<T, ?> col, ConditionEnum condition, Object col2, Object value) {
+        return new CaseWhenColumn.Condition(new TableColumn<>(col), condition, new ConstColumn(col2), new ConstColumn(value));
+    }
+
+    public static CaseWhenColumn.Condition WHEN(ConditionEnum condition, Object col2, Object value) {
+        return new CaseWhenColumn.Condition(condition, new ConstColumn(col2), new ConstColumn(value));
+    }
+
+    public static CaseWhenColumn CASE(Column elseColumn, CaseWhenColumn.Condition... when) {
+        CaseWhenColumn whenColumn = new CaseWhenColumn();
+        whenColumn.setElseColumn(elseColumn);
+        for (CaseWhenColumn.Condition condition : when) {
+            Assert.notNull(condition.getCol1(), "未选择满足条件的列");
+        }
+        whenColumn.setConditions(Arrays.asList(when));
+        return whenColumn;
+    }
+
+    public static <T> CaseWhenColumn CASE(SFunction<T, ?> col, Column elseColumn, CaseWhenColumn.Condition... when) {
+        CaseWhenColumn whenColumn = new CaseWhenColumn();
+        whenColumn.setElseColumn(elseColumn);
+        for (CaseWhenColumn.Condition condition : when) {
+            condition.setCol1(new TableColumn<>(col));
+        }
+        whenColumn.setConditions(Arrays.asList(when));
+        return whenColumn;
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T, K> ExistColumn EXISTS(Consumer<ExistWrapper<T, K>> consumer) {
-        ExistColumn existColumn = new ExistColumn();
-        existColumn.setConsumer((Consumer) consumer);
-        return existColumn;
+    public static <T> SubQueryColumn QUERY(Consumer<SubQueryWrapper<T>> consumer) {
+        SubQueryColumn subQueryColumn = new SubQueryColumn();
+        subQueryColumn.setConsumer((Consumer) consumer);
+        return subQueryColumn;
+    }
+
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <T> ExistColumn EXISTS(Consumer<SubQueryWrapper<T>> consumer) {
+        SubQueryColumn subQueryColumn = new SubQueryColumn();
+        subQueryColumn.setConsumer((Consumer) consumer);
+        return new ExistColumn(subQueryColumn);
     }
 
     public static <T> JSONColumn JSON(Column... column) {
@@ -50,7 +89,7 @@ public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T>
         return new MaxColumn(new TableColumn<>(column));
     }
 
-    public static <T> IfColumn IF(Column column1, Serializable trueValue, Serializable falseValue) {
+    public static <T> IfColumn IF(ExistColumn column1, Serializable trueValue, Serializable falseValue) {
         return new IfColumn(column1, null, null, new ConstColumn(trueValue), new ConstColumn(falseValue));
     }
 

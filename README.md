@@ -16,8 +16,8 @@ User
 
 |  id   | name  |
 |  ----  | ----  |
-| 10001  | 赵小莉 |
-| 10002  | 赵小金 |
+| 10001  | 老李 |
+| 10002  | 老王 |
 
 Score
 
@@ -68,10 +68,10 @@ public class Test {
 2021-06-23 18:04:01.634 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==>  Preparing: SELECT t_user.`name`,max(t_score.`score`) as id FROM t_user INNER JOIN t_score ON t_user.`id`=t_score.`user_id` WHERE (t_score.`exam_id` = ?) GROUP BY t_score.`exam_id` 
 2021-06-23 18:04:01.653 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 1(String)
 2021-06-23 18:04:01.669 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : <==      Total: 1
-User(id=100, name=赵小金)
+User(id=100, name=老王)
 ```
 
-##2.查询一下名字为赵小莉的有没有参加比赛'3'
+##2.查询一下名字为老李的有没有参加比赛'3'
 
 ```java
 package com.mybatis.plus;
@@ -97,7 +97,7 @@ public class Test {
     @Autowired
     private IUserService userService;
     /**
-     * 查询一下名字为赵小莉的有没有参加比赛2和比赛3
+     * 查询一下名字为老李的有没有参加比赛2和比赛3
      */
     @org.junit.Test
     public void testZXLExistScore() {
@@ -112,7 +112,7 @@ public class Test {
                                 .eq(Score::getExamId, "3")
                                 .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false))
                         , "name")
-                .eq(User::getName, "赵小莉")
+                .eq(User::getName, "老李")
                 .one();
         System.out.println(user.getName());
     }
@@ -122,7 +122,7 @@ public class Test {
 ```
 ```log
 2021-06-23 18:42:58.931 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==>  Preparing: SELECT JSON_OBJECT('是否参加了比赛2',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false),'是否参加了比赛3',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false)) as name FROM t_user WHERE (t_user.`name` = ?) 
-2021-06-23 18:42:58.948 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 2(String), 3(String), 赵小莉(String)
+2021-06-23 18:42:58.948 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 2(String), 3(String), 老李(String)
 2021-06-23 18:42:58.964 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : <==      Total: 1
 {"是否参加了比赛2": 1, "是否参加了比赛3": 1}
 ```
@@ -172,5 +172,5 @@ public class Test {
 2021-06-23 18:31:24.885 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : ==>  Preparing: SELECT * FROM t_user WHERE ( EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)) ) 
 2021-06-23 18:31:24.903 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : ==> Parameters: 2(String)
 2021-06-23 18:31:24.919 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : <==      Total: 2
-[User(id=10001, name=赵小金), User(id=10002, name=赵小莉)]
+[User(id=10001, name=老王), User(id=10002, name=老李)]
 ```
