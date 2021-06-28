@@ -14,7 +14,10 @@ public class MonthColumn implements Column {
 
     @Override
     public String selectColumn() {
-        return "month(" + column.selectColumn() + ")";
+        if (asName == null || "".equals(asName)) {
+            return "MONTH(" + column.selectColumn() + ")";
+        }
+        return "MONTH(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

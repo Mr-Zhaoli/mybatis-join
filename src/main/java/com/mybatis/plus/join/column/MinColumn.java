@@ -20,9 +20,9 @@ public class MinColumn implements Column {
     @Override
     public String selectColumn() {
         if (asName == null || "".equals(asName)) {
-            return "min(" + column.selectColumn() + ")";
+            return "MIN(" + column.selectColumn() + ")";
         }
-        return "min(" + column.selectColumn() + ") as " + asName;
+        return "MIN(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

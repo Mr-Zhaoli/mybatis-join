@@ -20,9 +20,9 @@ public class CountColumn implements Column {
     @Override
     public String selectColumn() {
         if (asName == null || "".equals(asName)) {
-            return "count(" + column.selectColumn() + ")";
+            return "COUNT(" + column.selectColumn() + ")";
         }
-        return "count(" + column.selectColumn() + ") as " + asName;
+        return "COUNT(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

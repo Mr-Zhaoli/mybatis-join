@@ -20,9 +20,9 @@ public class SumColumn implements Column {
     @Override
     public String selectColumn() {
         if (asName == null || "".equals(asName)) {
-            return "sum(" + column.selectColumn() + ")";
+            return "SUM(" + column.selectColumn() + ")";
         }
-        return "sum(" + column.selectColumn() + ") as " + asName;
+        return "SUM(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

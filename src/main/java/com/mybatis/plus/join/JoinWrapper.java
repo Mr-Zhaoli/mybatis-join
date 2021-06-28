@@ -174,12 +174,12 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
     // ***************************以下是补充的拼接sql方法**************************************
 
 
-    public JoinWrapper<T> notIN(boolean condition, SFunction<T, ?> col, SubQueryColumn column) {
+    public JoinWrapper<T> notIn(boolean condition, SFunction<T, ?> col, SubQueryColumn column) {
         return not(condition).in(true, col, column);
     }
 
-    public JoinWrapper<T> notIN(SFunction<T, ?> col, SubQueryColumn column) {
-        return notIN(true, col, column);
+    public JoinWrapper<T> notIn(SFunction<T, ?> col, SubQueryColumn column) {
+        return notIn(true, col, column);
     }
 
     public JoinWrapper<T> in(boolean condition, SFunction<T, ?> col, SubQueryColumn column) {

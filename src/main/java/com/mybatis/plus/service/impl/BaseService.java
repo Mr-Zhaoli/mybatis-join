@@ -16,32 +16,21 @@ import java.util.function.Consumer;
 public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T> implements IBaseService<T> {
 
 
-    public static <T> CaseWhenColumn.Condition WHEN(SFunction<T, ?> col, ConditionEnum condition, Object col2, Object value) {
-        return new CaseWhenColumn.Condition(new TableColumn<>(col), condition, new ConstColumn(col2), new ConstColumn(value));
+    public  static<T> CaseWhenColumn CASE(Column column) {
+        CaseWhenColumn caseWhenColumn = new CaseWhenColumn();
+        caseWhenColumn.setConditionColumn(column);
+        return caseWhenColumn;
     }
 
-    public static CaseWhenColumn.Condition WHEN(ConditionEnum condition, Object col2, Object value) {
-        return new CaseWhenColumn.Condition(condition, new ConstColumn(col2), new ConstColumn(value));
+    public  static<T> CaseWhenColumn CASE(SFunction<T,?> column) {
+        CaseWhenColumn caseWhenColumn = new CaseWhenColumn();
+        caseWhenColumn.setConditionColumn(new TableColumn<>(column));
+        return caseWhenColumn;
     }
 
-    public static CaseWhenColumn CASE(Column elseColumn, CaseWhenColumn.Condition... when) {
-        CaseWhenColumn whenColumn = new CaseWhenColumn();
-        whenColumn.setElseColumn(elseColumn);
-        for (CaseWhenColumn.Condition condition : when) {
-            Assert.notNull(condition.getCol1(), "未选择满足条件的列");
-        }
-        whenColumn.setConditions(Arrays.asList(when));
-        return whenColumn;
-    }
 
-    public static <T> CaseWhenColumn CASE(SFunction<T, ?> col, Column elseColumn, CaseWhenColumn.Condition... when) {
-        CaseWhenColumn whenColumn = new CaseWhenColumn();
-        whenColumn.setElseColumn(elseColumn);
-        for (CaseWhenColumn.Condition condition : when) {
-            condition.setCol1(new TableColumn<>(col));
-        }
-        whenColumn.setConditions(Arrays.asList(when));
-        return whenColumn;
+    public static CaseWhenColumn CASE() {
+        return new CaseWhenColumn();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -59,7 +48,21 @@ public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T>
         return new ExistColumn(subQueryColumn);
     }
 
-    public static <T> JSONColumn JSON(Column... column) {
+    /**
+     * 构建key value 键值对
+     */
+    public static JSONColumn.Entry KV(String key, Column value) {
+        return new JSONColumn.Entry(new ConstColumn(key), value);
+    }
+
+    /**
+     * 构建key value 键值对
+     */
+    public static <T> JSONColumn.Entry KV(String key, SFunction<T, ?> value) {
+        return new JSONColumn.Entry(new ConstColumn(key), new TableColumn<>(value));
+    }
+
+    public static JSONColumn JSON(JSONColumn.Entry... column) {
         return new JSONColumn(column);
     }
 

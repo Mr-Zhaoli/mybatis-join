@@ -14,7 +14,10 @@ public class YearColumn implements Column {
 
     @Override
     public String selectColumn() {
-        return "YEAR(" + column.selectColumn() + ")";
+        if (asName == null || "".equals(asName)) {
+            return "YEAR(" + column.selectColumn() + ")";
+        }
+        return "YEAR(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

@@ -40,7 +40,7 @@ public class Test {
         System.out.println(userList);
 
         userList = userService.query(User.class)
-                .notIN(User::getId, QUERY(q -> q.query(User.class)
+                .notIn(User::getId, QUERY(q -> q.query(User.class)
                         .select(User::getId)))
                 .list();
         System.out.println(userList);
@@ -50,25 +50,21 @@ public class Test {
     @org.junit.Test
     public void testCaseWhenColumn() {
         List<User> userList = userService.query(User.class)
-                .select(CASE(
-                        User::getId,
-                        COL(1000),
-                        WHEN(ConditionEnum.EQ, "1", 100),
-                        WHEN(ConditionEnum.EQ, "1", "200"),
-                        WHEN(ConditionEnum.EQ, "1", 300),
-                        WHEN(ConditionEnum.EQ, "1", "400")
-                ), "id")
+                .select(CASE().when(User::getId, ConditionEnum.EQ, "1", 100)
+                        .when(User::getId, ConditionEnum.EQ, "2", 100)
+                        .when(User::getId, ConditionEnum.EQ, "3", 100)
+                        .when(User::getId, ConditionEnum.EQ, "4", 100)
+                        .el(100), "id")
                 .list();
         System.out.println(userList);
 
 
         userList = userService.query(User.class)
-                .select(CASE(null,
-                        WHEN(User::getId, ConditionEnum.EQ, "1", 100),
-                        WHEN(User::getId, ConditionEnum.EQ, "1", "200"),
-                        WHEN(User::getId, ConditionEnum.EQ, "1", 300),
-                        WHEN(User::getId, ConditionEnum.EQ, "1", "400")
-                ), "id")
+                .select(CASE(User::getId).when("1", "1000")
+                        .when("2", "2000")
+                        .when("3", "3000")
+                        .when("4", "4000")
+                        .el(100), "id")
                 .list();
         System.out.println(userList);
     }
@@ -120,14 +116,16 @@ public class Test {
     public void testLAOLIExistScore() {
         User user = userService.query(User.class)
                 .select(JSON(
-                        COL("是否参加了比赛2"),
-                        IF(EXISTS(q -> q.query(Score.class)
-                                .eq(Score::getExamId, "3")
-                                .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false),
-                        COL("是否参加了比赛3"),
-                        IF(EXISTS(q -> q.query(Score.class).eq(Score::getExamId, "3")
-                                .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false)
-                        )
+                        KV("是否参加了比赛2",
+                                IF(EXISTS(q -> q.query(Score.class)
+                                        .eq(Score::getExamId, "2")
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false)),
+                        KV("是否参加了比赛3",
+                                IF(EXISTS(q -> q.query(Score.class)
+                                        .eq(Score::getExamId, "3")
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)
+                                ), true, false)
+                        ))
                         , "name")
                 .eq(User::getName, "老李")
                 .one();

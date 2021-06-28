@@ -1,9 +1,13 @@
 package com.mybatis.plus.join.column;
 
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.mybatis.plus.join.ColumnData;
 import com.mybatis.plus.join.ConditionEnum;
 import lombok.Data;
+import org.springframework.util.Assert;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,14 +20,15 @@ import java.util.stream.Collectors;
 @Data
 public class CaseWhenColumn implements Column {
     private String asName;
-    private List<Condition> conditions;
+    private List<Condition> conditions = new ArrayList<>();
     private Column elseColumn;
+    private Column conditionColumn;
 
     @Override
     public String selectColumn() {
         String whens = conditions.stream().map(o -> "WHEN " +
-                o.col1.selectColumn() + " " + o.condition.getSqlSegment() + " " + o.col2.selectColumn() +
-                " THEN " + o.value.selectColumn())
+                o.col.selectColumn() + " " + o.condition.getSqlSegment() + " " + o.value.selectColumn() +
+                " THEN " + o.then.selectColumn())
                 .collect(Collectors.joining(" "));
         String s = "(CASE "
                 + whens;
@@ -34,15 +39,48 @@ public class CaseWhenColumn implements Column {
         if (asName == null || "".equals(asName)) {
             return s;
         }
-        return s + ") as " + asName;
+        return s + ") AS " + asName;
+    }
+
+
+    public <T> CaseWhenColumn when(Object value, Object then) {
+        Assert.notNull(conditionColumn,"conditionColumn不能为空");
+        conditions.add(new CaseWhenColumn.Condition(conditionColumn, ConditionEnum.EQ, new ConstColumn(value), new ConstColumn(then)));
+        return this;
+    }
+
+
+    public <T> CaseWhenColumn when(SFunction<T, ?> col, ConditionEnum condition, Object value, Object then) {
+        conditions.add(new CaseWhenColumn.Condition(new TableColumn<>(col), condition, new ConstColumn(value), new ConstColumn(then)));
+        return this;
+    }
+
+    public CaseWhenColumn when(Column column, ConditionEnum condition, Object value, Object then) {
+        conditions.add(new CaseWhenColumn.Condition(column, condition, new ConstColumn(value), new ConstColumn(then)));
+        return this;
+    }
+
+    public CaseWhenColumn el(Column elseColumn) {
+        this.elseColumn = elseColumn;
+        return this;
+    }
+
+    public CaseWhenColumn el(Serializable elseColumn) {
+        this.elseColumn = new ConstColumn(elseColumn);
+        return this;
+    }
+
+    public <T> CaseWhenColumn el(SFunction<T,?> col) {
+        this.elseColumn = new TableColumn<>(col);
+        return this;
     }
 
     @Override
     public void fillData(ColumnData join) {
         for (Condition condition : conditions) {
-            condition.col1.fillData(join);
-            condition.col2.fillData(join);
+            condition.col.fillData(join);
             condition.value.fillData(join);
+            condition.then.fillData(join);
         }
         if (elseColumn != null) {
             elseColumn.fillData(join);
@@ -56,22 +94,22 @@ public class CaseWhenColumn implements Column {
 
     @Data
     public static class Condition {
-        private Column col1;
-        private Column col2;
+        private Column col;
         private ConditionEnum condition;
         private Column value;
+        private Column then;
 
-        public Condition(Column col1, ConditionEnum condition, Column col2, Column value) {
-            this.col1 = col1;
-            this.col2 = col2;
-            this.condition = condition;
+        public Condition(Column col, ConditionEnum condition, Column value, Column then) {
+            this.col = col;
             this.value = value;
+            this.condition = condition;
+            this.then = then;
         }
 
-        public Condition(ConditionEnum condition, Column col2, Column value) {
-            this.col2 = col2;
-            this.condition = condition;
+        public Condition(ConditionEnum condition, Column value, Column then) {
             this.value = value;
+            this.condition = condition;
+            this.then = then;
         }
     }
 

@@ -4,15 +4,15 @@ import com.mybatis.plus.join.ColumnData;
 import lombok.Data;
 
 @Data
-public class MaxColumn implements Column {
+public class AVGColumn implements Column {
     private Column column;
     private String asName;
 
-    public MaxColumn(Column column) {
+    public AVGColumn(Column column) {
         this.column = column;
     }
 
-    public MaxColumn(Column column, String asName) {
+    public AVGColumn(Column column, String asName) {
         this.column = column;
         this.asName = asName;
     }
@@ -20,9 +20,9 @@ public class MaxColumn implements Column {
     @Override
     public String selectColumn() {
         if (asName == null || "".equals(asName)) {
-            return "MAX(" + column.selectColumn() + ")";
+            return "AVG(" + column.selectColumn() + ")";
         }
-        return "MAX(" + column.selectColumn() + ") AS " + asName;
+        return "AVG(" + column.selectColumn() + ") AS " + asName;
     }
 
     @Override

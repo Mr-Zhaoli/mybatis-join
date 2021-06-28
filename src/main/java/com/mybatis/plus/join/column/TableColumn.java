@@ -24,7 +24,7 @@ public class TableColumn<T> implements Column {
         if (asName == null || "".equals(asName)) {
             return s;
         }
-        return s + " as " + asName;
+        return s + " AS " + asName;
     }
 
     @Override
