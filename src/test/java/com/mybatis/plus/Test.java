@@ -2,6 +2,7 @@ package com.mybatis.plus;
 
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.mybatis.plus.dto.UserDTO;
 import com.mybatis.plus.entity.Score;
 import com.mybatis.plus.entity.User;
 import com.mybatis.plus.join.ConditionEnum;
@@ -24,6 +25,18 @@ public class Test {
 
     @Autowired
     private IUserService userService;
+
+
+    /**
+     * 测试map转对象
+     */
+    @org.junit.Test
+    public void testMap() {
+        List<UserDTO> userList = userService.query(User.class)
+                .select(User::getName,User::getId,User::getCreateTime)
+                .list(UserDTO.class);
+        System.out.println(userList);
+    }
 
     /**
      * 测试子查询,获取子查询的结果,不能将子查询当成临时表来查询.
@@ -77,7 +90,7 @@ public class Test {
         List<User> list = userService.query(User.class)
                 .select(IFNULL(User::getId, 100), "id")
                 .innerJoin(Score.class)
-                .on(User::getId, Score::getUserId, ConditionEnum.EQ)
+                .on(User::getId, ConditionEnum.EQ, Score::getUserId)
                 .select(Score::getUserId, Score::getScore, Score::getExamId)
                 .select(IFNULL(Score::getId, 100), "id")
                 .where(Score::getId, ConditionEnum.GE, COL("10001"))
@@ -101,7 +114,7 @@ public class Test {
         User user = userService.query(User.class)
                 .select(User::getName)
                 .innerJoin(Score.class)
-                .on(User::getId, Score::getUserId, ConditionEnum.EQ)
+                .on(User::getId, ConditionEnum.EQ, Score::getUserId)
                 .eq(Score::getExamId, "1")
                 .select(MAX(Score::getScore), "id")
                 .one();
@@ -116,17 +129,15 @@ public class Test {
     public void testLAOLIExistScore() {
         User user = userService.query(User.class)
                 .select(JSON(
-                        KV("是否参加了比赛2",
-                                IF(EXISTS(q -> q.query(Score.class)
+                        KV("是否参加了比赛2", IF(EXISTS(q -> q.query(Score.class)
                                         .eq(Score::getExamId, "2")
-                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)), true, false)),
-                        KV("是否参加了比赛3",
-                                IF(EXISTS(q -> q.query(Score.class)
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)),
+                                true, false)),
+                        KV("是否参加了比赛3", IF(EXISTS(q -> q.query(Score.class)
                                         .eq(Score::getExamId, "3")
-                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)
-                                ), true, false)
-                        ))
-                        , "name")
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)),
+                                true, false))
+                ), "name")
                 .eq(User::getName, "老李")
                 .one();
         System.out.println(user.getName());

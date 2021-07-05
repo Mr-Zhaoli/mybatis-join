@@ -5,11 +5,10 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
-@Component
 public interface ParentMapper<T> extends BaseMapper<T> {
 
     List<Object> selectObjsJoin(@Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
@@ -28,4 +27,13 @@ public interface ParentMapper<T> extends BaseMapper<T> {
 
 
     IPage<T> selectPageJoin(IPage<T> page, @Param(Constants.WRAPPER) Wrapper<T> queryWrapper);
+
+
+    Map<String, Object> selectMapJoin(@Param(Constants.WRAPPER) Wrapper<?> queryWrapper);
+
+
+    List<Map<String, Object>> selectMapsJoin(@Param(Constants.WRAPPER) Wrapper<?> queryWrapper);
+
+
+    IPage<Map<String, Object>> selectMapsPageJoin(IPage<?> page, @Param(Constants.WRAPPER) Wrapper<?> queryWrapper);
 }

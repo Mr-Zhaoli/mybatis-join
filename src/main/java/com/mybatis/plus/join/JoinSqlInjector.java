@@ -21,7 +21,10 @@ public class JoinSqlInjector extends DefaultSqlInjector implements Constants {
                 new SelectObj(),
                 new SelectOne(),
                 new SelectList(),
-                new SelectObjs()
+                new SelectObjs(),
+                new SelectMap(),
+                new SelectMaps(),
+                new SelectMapsPage()
         ));
         return methodList;
     }

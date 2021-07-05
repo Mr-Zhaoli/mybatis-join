@@ -7,22 +7,20 @@ import com.mybatis.plus.join.SubQueryWrapper;
 import com.mybatis.plus.join.column.*;
 import com.mybatis.plus.mapper.ParentMapper;
 import com.mybatis.plus.service.IBaseService;
-import org.springframework.util.Assert;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class BaseService<M extends ParentMapper<T>, T> extends ServiceImpl<M, T> implements IBaseService<T> {
 
 
-    public  static<T> CaseWhenColumn CASE(Column column) {
+    public static <T> CaseWhenColumn CASE(Column column) {
         CaseWhenColumn caseWhenColumn = new CaseWhenColumn();
         caseWhenColumn.setConditionColumn(column);
         return caseWhenColumn;
     }
 
-    public  static<T> CaseWhenColumn CASE(SFunction<T,?> column) {
+    public static <T> CaseWhenColumn CASE(SFunction<T, ?> column) {
         CaseWhenColumn caseWhenColumn = new CaseWhenColumn();
         caseWhenColumn.setConditionColumn(new TableColumn<>(column));
         return caseWhenColumn;

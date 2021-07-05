@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.enums.SqlLike;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.toolkit.ArrayUtils;
+import com.baomidou.mybatisplus.core.toolkit.BeanUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
@@ -113,6 +114,32 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
     public IPage<T> page(IPage<T> page) {
         return baseMapper.selectPageJoin(page, this);
     }
+
+
+    /**
+     *
+     * @param cl
+     * @param <K>
+     * @return
+     */
+    public <K> K one(Class<K> cl) {
+        Map<String, Object> mapJoin = baseMapper.selectMapJoin(this);
+        return BeanUtils.mapToBean(mapJoin, cl);
+    }
+
+
+    public <K> List<K> list(Class<K> cl) {
+        List<Map<String, Object>> mapList = baseMapper.selectMapsJoin(this);
+        return BeanUtils.mapsToBeans(mapList, cl);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <K> IPage<K> page(IPage<K> page, Class<K> cl) {
+        IPage<Map<String, Object>> mapIPage = baseMapper.selectMapsPageJoin(page, this);
+        mapIPage.setRecords((List) BeanUtils.mapsToBeans(mapIPage.getRecords(), cl));
+        return (IPage<K>) mapIPage;
+    }
+
 
     // ******************以上方法用于执行sql**********************
 
@@ -653,31 +680,32 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
         }
 
 
-        public Join<SourceTable, TargetTable> on(SFunction<SourceTable, ?> col1, SFunction<TargetTable, ?> col2, ConditionEnum sqlKeyword) {
-            TableColumn<SourceTable> tableColumn1 = new TableColumn<>(col1);
-            TableColumn<TargetTable> tableColumn2 = new TableColumn<>(col2);
-            ColumnCondition condition = new ColumnCondition(sqlKeyword, tableColumn1, tableColumn2);
-            condition.setSqlKeyword(sqlKeyword);
+        /**
+         * is null 或者 is not null
+         */
+        public <M> Join<SourceTable, TargetTable> on(SFunction<M, ?> col1, ConditionEnum sqlKeyword) {
+            TableColumn<?> tableColumn1 = new TableColumn<>(col1);
+            ColumnCondition condition = new ColumnCondition(tableColumn1, sqlKeyword);
             conditions.add(condition);
             return this;
         }
 
-        public Join<SourceTable, TargetTable> on(SFunction<SourceTable, ?> col1, Serializable value, ConditionEnum sqlKeyword) {
+        public <M, N> Join<SourceTable, TargetTable> on(SFunction<M, ?> col1, ConditionEnum sqlKeyword, SFunction<N, ?> col2) {
+            TableColumn<?> tableColumn1 = new TableColumn<>(col1);
+            TableColumn<?> tableColumn2 = new TableColumn<>(col2);
+            ColumnCondition condition = new ColumnCondition(sqlKeyword, tableColumn1, tableColumn2);
+            conditions.add(condition);
+            return this;
+        }
+
+        public <M> Join<SourceTable, TargetTable> on(SFunction<M, ?> col1, ConditionEnum sqlKeyword, Serializable value) {
             ValueCondition condition = new ValueCondition(sqlKeyword,
                     new ConstColumn(SFuncUtils.getColumnNameWithTable(col1)),
                     value, conditions.size(), index);
-            condition.setSqlKeyword(sqlKeyword);
             conditions.add(condition);
             return this;
         }
 
-
-        public Join<SourceTable, TargetTable> on(SFunction<TargetTable, ?> col1, ConditionEnum sqlKeyword, Serializable value) {
-            ValueCondition condition = new ValueCondition(sqlKeyword, new TableColumn<>(col1), value, conditions.size(), index);
-            condition.setSqlKeyword(sqlKeyword);
-            conditions.add(condition);
-            return this;
-        }
 
         @Override
         public String toString() {

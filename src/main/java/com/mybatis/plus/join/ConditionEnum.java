@@ -1,7 +1,6 @@
 package com.mybatis.plus.join;
 
 public enum ConditionEnum {
-    LIKE("LIKE"),
     IN("IN"),
     EQ("="),
     NE("<>"),
@@ -14,7 +13,7 @@ public enum ConditionEnum {
     ;
     private final String keyword;
 
-    private ConditionEnum(final String keyword) {
+    ConditionEnum(String keyword) {
         this.keyword = keyword;
     }
 
