@@ -117,7 +117,6 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
 
 
     /**
-     *
      * @param cl
      * @param <K>
      * @return
@@ -255,6 +254,16 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
         consumer.accept(instance);
         doIt(true, EXISTS, LEFT_BRACKET, instance, RIGHT_BRACKET);
         return this;
+    }
+
+
+    public <K> JoinWrapper<T> select(Column column, SFunction<K, ?> asName) {
+        return select(column, SFuncUtils.getColumnName(asName));
+    }
+
+
+    public <K> JoinWrapper<T> select(SFunction<T, ?> column, SFunction<K, ?> asName) {
+        return select(column, SFuncUtils.getColumnName(asName));
     }
 
     public JoinWrapper<T> select(Column column, String asName) {
@@ -644,6 +653,15 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
         }
 
 
+        public <K> Join<SourceTable, TargetTable> select(Column column, SFunction<K, ?> asName) {
+            return this.select(column, SFuncUtils.getColumnName(asName));
+        }
+
+
+        public <K> Join<SourceTable, TargetTable> select(SFunction<TargetTable, ?> column, SFunction<K, ?> asName) {
+            return this.select(column, SFuncUtils.getColumnName(asName));
+        }
+
         public Join<SourceTable, TargetTable> select(Column column, String asName) {
             column.fillData(new ColumnData(JoinWrapper.this));
             List<Column> columns = selectList.get(tableName);
@@ -699,8 +717,9 @@ public class JoinWrapper<T> extends AbstractLambdaWrapper<T, JoinWrapper<T>> {
         }
 
         public <M> Join<SourceTable, TargetTable> on(SFunction<M, ?> col1, ConditionEnum sqlKeyword, Serializable value) {
-            ValueCondition condition = new ValueCondition(sqlKeyword,
-                    new ConstColumn(SFuncUtils.getColumnNameWithTable(col1)),
+            ConstColumn column = new ConstColumn(SFuncUtils.getColumnNameWithTable(col1));
+            column.fillData(new ColumnData(JoinWrapper.this));
+            ValueCondition condition = new ValueCondition(sqlKeyword, column,
                     value, conditions.size(), index);
             conditions.add(condition);
             return this;

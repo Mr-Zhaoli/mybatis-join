@@ -8,9 +8,12 @@ import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.core.toolkit.support.SerializedLambda;
+import com.mybatis.plus.entity.Score;
+import com.mybatis.plus.entity.User;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * 用SFunction获取表名+"."+列名
@@ -29,5 +32,11 @@ public class SFuncUtils {
         Assert.notNull(columnCache, "can not find lambda cache for this property [%s] of entity [%s]",
                 fieldName, aClass.getName());
         return TableInfoHelper.getTableInfo(aClass).getTableName() + ".`" + columnCache.getColumn() + "`";
+    }
+
+
+    public static<T> String getColumnName(SFunction<T, ?> sFunction) throws MybatisPlusException {
+        SerializedLambda lambda = LambdaUtils.resolve(sFunction);
+        return PropertyNamer.methodToProperty(lambda.getImplMethodName());
     }
 }

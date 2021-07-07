@@ -2,7 +2,7 @@
 
 支持关联查询
 
-支持mysql中的各种函数,不完整,但是可以后续慢慢补充
+支持mysql中的各种函数(json_object(),sum(),max(),case when,ifnull,if(),month(),year()......),不完整,但是可以后续慢慢补充
 
 
 使用说明:
@@ -33,104 +33,11 @@ Score
 ##1.查询在考试'1'中成绩最高的人名字
 
 ````java
-import com.mybatis.plus.entity.Score;
-import com.mybatis.plus.entity.User;
-import com.mybatis.plus.join.ConditionEnum;
-import com.mybatis.plus.service.IUserService;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import static com.mybatis.plus.service.impl.BaseService.*;
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class Test {
-    @Autowired
-    private IUserService userService;
-
-    @org.junit.Test
-    public void testMaxScore() {
-        User user = userService.query(User.class)
-                .select(User::getName)
-                .innerJoin(Score.class)
-                .on(User::getId, Score::getUserId, ConditionEnum.EQ)
-                .eq(Score::getExamId, "1")
-                .select(max(Score::getScore), "id")
-                .groupBy(Score::getExamId)
-                .one();
-        System.out.println(user);
-    }
-
-}
-````
-打印日志为:
-```log
-2021-06-23 18:04:01.634 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==>  Preparing: SELECT t_user.`name`,max(t_score.`score`) as id FROM t_user INNER JOIN t_score ON t_user.`id`=t_score.`user_id` WHERE (t_score.`exam_id` = ?) GROUP BY t_score.`exam_id` 
-2021-06-23 18:04:01.653 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 1(String)
-2021-06-23 18:04:01.669 DEBUG 8260 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : <==      Total: 1
-User(id=100, name=老王)
-```
-
-##2.查询一下名字为老李的有没有参加比赛'3'
-
-```java
 package com.mybatis.plus;
 
 
-import com.mybatis.plus.entity.Score;
-import com.mybatis.plus.entity.User;
-import com.mybatis.plus.join.ConditionEnum;
-import com.mybatis.plus.service.IUserService;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.Objects;
-
-import static com.mybatis.plus.service.impl.BaseService.*;
-
-@RunWith(SpringRunner.class)
-@SpringBootTest
-public class Test {
-
-    @Autowired
-    private IUserService userService;
-    /**
-     * 查询一下名字为老李的有没有参加比赛2和比赛3
-     */
-    @org.junit.Test
-    public void testZXLExistScore() {
-        User user = userService.query(User.class)
-                .select(json(
-                        col("是否参加了比赛2"),
-                        If(exists(q -> q.query(Score.class)
-                                .eq(Score::getExamId, "2")
-                                .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false),
-                        col("是否参加了比赛3"),
-                        If(exists(q -> q.query(Score.class)
-                                .eq(Score::getExamId, "3")
-                                .on(Score::getUserId, User::getId, ConditionEnum.EQ)), true, false))
-                        , "name")
-                .eq(User::getName, "老李")
-                .one();
-        System.out.println(user.getName());
-    }
-
-}
-
-```
-```log
-2021-06-23 18:42:58.931 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==>  Preparing: SELECT JSON_OBJECT('是否参加了比赛2',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false),'是否参加了比赛3',IF(EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)),true,false)) as name FROM t_user WHERE (t_user.`name` = ?) 
-2021-06-23 18:42:58.948 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : ==> Parameters: 2(String), 3(String), 老李(String)
-2021-06-23 18:42:58.964 DEBUG 22404 --- [           main] c.m.p.mapper.UserMapper.selectOneJoin    : <==      Total: 1
-{"是否参加了比赛2": 1, "是否参加了比赛3": 1}
-```
-##3.查询参加比赛'2'的人员名单
-```java
-package com.mybatis.plus;
-
-
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.mybatis.plus.dto.UserDTO;
 import com.mybatis.plus.entity.Score;
 import com.mybatis.plus.entity.User;
 import com.mybatis.plus.join.ConditionEnum;
@@ -141,16 +48,139 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
-import java.util.Objects;
 
 import static com.mybatis.plus.service.impl.BaseService.*;
 
+/**
+ * 运行前需要 set @@global_mode=''
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class Test {
 
     @Autowired
     private IUserService userService;
+
+
+    /**
+     * 测试map转对象
+     */
+    @org.junit.Test
+    public void testMap() {
+        List<UserDTO> userList = userService.query(User.class)
+                .select(User::getName,User::getId,User::getCreateTime)
+                .list(UserDTO.class);
+        System.out.println(userList);
+    }
+
+    /**
+     * 测试子查询,获取子查询的结果,不能将子查询当成临时表来查询.
+     */
+    @org.junit.Test
+    public void testSubQuery() {
+        List<User> userList = userService.query(User.class)
+                .select(QUERY(q -> q.query(Score.class)
+                                .select(Score::getId)
+                                .where(Score::getId, ConditionEnum.EQ, User::getId)
+                                .eq(Score::getId, "1")),
+                        "id")
+                .list();
+        System.out.println(userList);
+
+        userList = userService.query(User.class)
+                .notIn(User::getId, QUERY(q -> q.query(User.class)
+                        .select(User::getId)))
+                .list();
+        System.out.println(userList);
+    }
+
+
+    @org.junit.Test
+    public void testCaseWhenColumn() {
+        List<User> userList = userService.query(User.class)
+                .select(CASE().when(User::getId, ConditionEnum.EQ, "1", 100)
+                        .when(User::getId, ConditionEnum.EQ, "2", 100)
+                        .when(User::getId, ConditionEnum.EQ, "3", 100)
+                        .when(User::getId, ConditionEnum.EQ, "4", 100)
+                        .el(100), "id")
+                .list();
+        System.out.println(userList);
+
+
+        userList = userService.query(User.class)
+                .select(CASE(User::getId).when("1", "1000")
+                        .when("2", "2000")
+                        .when("3", "3000")
+                        .when("4", "4000")
+                        .el(100), "id")
+                .list();
+        System.out.println(userList);
+    }
+
+    @org.junit.Test
+    public void testConstColumn() {
+        if (StringUtils.isNotEmpty("")) {
+            return;
+        }
+        List<User> list = userService.query(User.class)
+                .select(IFNULL(User::getId, 100), "id")
+                .innerJoin(Score.class)
+                .on(User::getId, ConditionEnum.EQ, Score::getUserId)
+                .select(Score::getUserId, Score::getScore, Score::getExamId)
+                .select(IFNULL(Score::getId, 100), "id")
+                .where(Score::getId, ConditionEnum.GE, COL("10001"))
+                .list();
+        System.out.println(list);
+    }
+
+    /**
+     * we
+     */
+    @org.junit.Test
+    public void testWhere() {
+        List<User> list = userService.query(User.class)
+                .where(YEAR(User::getCreateTime), ConditionEnum.LE, "2021")
+                .list();
+        System.out.println(list);
+    }
+
+    /**
+     * 查询在考试1中成绩最高的人名字
+     */
+    @org.junit.Test
+    public void testMaxScore() {
+        User user = userService.query(User.class)
+                .select(User::getName)
+                .innerJoin(Score.class)
+                .on(User::getId, ConditionEnum.EQ, Score::getUserId)
+                .on(User::getId, ConditionEnum.EQ,"1")
+                .eq(Score::getExamId, "1")
+                .select(MAX(Score::getScore), "id")
+                .one();
+        System.out.println(user);
+    }
+
+
+    /**
+     * 查询一下名字为老李的有没有参加比赛2和比赛3
+     */
+    @org.junit.Test
+    public void testLAOLIExistScore() {
+        User user = userService.query(User.class)
+                .select(JSON(
+                        KV("是否参加了比赛2", IF(EXISTS(q -> q.query(Score.class)
+                                        .eq(Score::getExamId, "2")
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)),
+                                true, false)),
+                        KV("是否参加了比赛3", IF(EXISTS(q -> q.query(Score.class)
+                                        .eq(Score::getExamId, "3")
+                                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)),
+                                true, false))
+                ), "name")
+                .eq(User::getName, "老李")
+                .one();
+        System.out.println(user.getName());
+    }
 
     /**
      * 查询参加比赛2的人员名单
@@ -159,7 +189,7 @@ public class Test {
     public void testExistScoreInExam2() {
         List<User> users = userService.query(User.class)
                 .exists(q -> q.query(Score.class).eq(Score::getExamId, "2")
-                        .on(Score::getUserId, User::getId, ConditionEnum.EQ)
+                        .where(Score::getUserId, ConditionEnum.EQ, User::getId)
                 )
                 .list();
         System.out.println(users);
@@ -167,10 +197,4 @@ public class Test {
 
 }
 
-```
-```log
-2021-06-23 18:31:24.885 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : ==>  Preparing: SELECT * FROM t_user WHERE ( EXISTS(SELECT 1 FROM t_score WHERE t_score.`user_id`=t_user.`id` AND (t_score.`exam_id` = ?)) ) 
-2021-06-23 18:31:24.903 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : ==> Parameters: 2(String)
-2021-06-23 18:31:24.919 DEBUG 28780 --- [           main] c.m.p.mapper.UserMapper.selectListJoin   : <==      Total: 2
-[User(id=10001, name=老王), User(id=10002, name=老李)]
 ```

@@ -14,7 +14,7 @@ public class UserService extends BaseService<UserMapper, User> implements IUserS
     public void main() {
         User score = query(User.class).select(User::getName)
                 .innerJoin(Score.class)
-                .on(User::getId, ConditionEnum.EQ, Score::getUserId)
+                .on(Score::getUserId, ConditionEnum.EQ, User::getId)
                 .eq(Score::getExamId, 1)
                 .select(MAX(Score::getScore), "name")
                 .select(Score::getUserId)

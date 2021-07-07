@@ -98,6 +98,9 @@ public class Test {
         System.out.println(list);
     }
 
+    /**
+     * test where
+     */
     @org.junit.Test
     public void testWhere() {
         List<User> list = userService.query(User.class)
@@ -115,6 +118,7 @@ public class Test {
                 .select(User::getName)
                 .innerJoin(Score.class)
                 .on(User::getId, ConditionEnum.EQ, Score::getUserId)
+                .on(User::getId, ConditionEnum.EQ,"1")
                 .eq(Score::getExamId, "1")
                 .select(MAX(Score::getScore), "id")
                 .one();

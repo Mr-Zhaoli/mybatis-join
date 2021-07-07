@@ -32,6 +32,6 @@ public class ValueCondition implements Condition {
 
     @Override
     public String toString() {
-        return column + sqlKeyword.getSqlSegment() + " #{ew.joinList[" + joinIndex + "].conditions[" + index + "].value}";
+        return column.selectColumn() + sqlKeyword.getSqlSegment() + " #{ew.joinList[" + joinIndex + "].conditions[" + index + "].value}";
     }
 }
